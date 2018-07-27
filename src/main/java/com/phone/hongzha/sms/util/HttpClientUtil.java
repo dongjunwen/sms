@@ -17,6 +17,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
+import org.apache.http.message.BasicHeader;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.ssl.SSLContextBuilder;
 import org.apache.http.util.EntityUtils;
@@ -136,13 +137,14 @@ public class HttpClientUtil {
      * @param params 参数map
      * @return
      */
-    public static String doPost(String apiUrl, Map<String, Object> params) {
+    public static String doPost(String apiUrl, Map<String, Object> params,String cookieStr) {
         CloseableHttpClient httpClient = HttpClients.createDefault();
         String httpStr = null;
         HttpPost httpPost = new HttpPost(apiUrl);
         CloseableHttpResponse response = null;
         try {
             httpPost.setConfig(requestConfig);
+            httpPost.addHeader(new BasicHeader("Cookie",cookieStr));
             List<NameValuePair> pairList = new ArrayList<>(params.size());
             for (Map.Entry<String, Object> entry : params.entrySet()) {
                 NameValuePair pair = new BasicNameValuePair(entry.getKey(), entry
@@ -172,6 +174,42 @@ public class HttpClientUtil {
             }
         }
         return httpStr;
+    }
+
+    public static CloseableHttpResponse doPostResp(String apiUrl, Map<String, Object> params) {
+        CloseableHttpClient httpClient = HttpClients.createDefault();
+        String httpStr = null;
+        HttpPost httpPost = new HttpPost(apiUrl);
+        CloseableHttpResponse response = null;
+        try {
+            httpPost.setConfig(requestConfig);
+            List<NameValuePair> pairList = new ArrayList<>(params.size());
+            for (Map.Entry<String, Object> entry : params.entrySet()) {
+                NameValuePair pair = new BasicNameValuePair(entry.getKey(), entry
+                        .getValue().toString());
+                pairList.add(pair);
+            }
+            httpPost.setEntity(new UrlEncodedFormEntity(pairList, Charset.forName("UTF-8")));
+            logger.info("[http工具类]请求地址:{}请求参数:{}",apiUrl,params);
+            response = httpClient.execute(httpPost);
+            if(302==response.getStatusLine().getStatusCode()){
+                Header header = response.getFirstHeader("location"); // 跳转的目标地址是在 HTTP-HEAD 中的
+                String newUri = header.getValue(); // 这就是跳转后的地址，再向这个地址发出新申请，以便得到跳转后的信息是啥。
+                return doPostResp(newUri,params);
+            }
+
+        } catch (IOException e) {
+            logger.error("[http工具类]请求发生IO异常:",e);
+        } finally {
+            if (response != null) {
+                try {
+                    EntityUtils.consume(response.getEntity());
+                } catch (IOException e) {
+                    logger.error("[http工具类]请求发生IO异常1:",e);
+                }
+            }
+        }
+        return response;
     }
 
 
