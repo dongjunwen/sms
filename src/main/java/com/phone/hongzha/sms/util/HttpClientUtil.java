@@ -1,5 +1,6 @@
 package com.phone.hongzha.sms.util;
 
+import com.alibaba.fastjson.JSONObject;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.*;
 import org.apache.http.client.HttpClient;
@@ -103,12 +104,14 @@ public class HttpClientUtil {
         String result = null;
         HttpClient httpclient = new DefaultHttpClient();
         try {
-            logger.debug("[http工具类]请求参数:",apiUrl);
+            logger.info("[http工具类]请求参数:{}",apiUrl);
             HttpGet httpGet = new HttpGet(apiUrl);
+            httpGet.setHeader("User-Agent","Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36");
+            httpGet.setHeader("Accept","application/json, text/plain, */*");
             HttpResponse response = httpclient.execute(httpGet);
             int statusCode = response.getStatusLine().getStatusCode();
 
-            logger.debug("[http工具类]响应状态:",statusCode);
+            logger.info("[http工具类]响应状态:",statusCode);
 
             HttpEntity entity = response.getEntity();
             if (entity != null) {
@@ -128,7 +131,7 @@ public class HttpClientUtil {
      * @return
      */
     public static String doPost(String apiUrl) {
-        return doPost(apiUrl, new HashMap<String, Object>());
+        return doPosMap(apiUrl, new HashMap<String, Object>());
     }
 
     /**
@@ -157,7 +160,7 @@ public class HttpClientUtil {
             if(302==response.getStatusLine().getStatusCode()){
                 Header header = response.getFirstHeader("location"); // 跳转的目标地址是在 HTTP-HEAD 中的
                String newUri = header.getValue(); // 这就是跳转后的地址，再向这个地址发出新申请，以便得到跳转后的信息是啥。
-              return doPost(newUri,params);
+              return doPosMap(newUri,params);
             }
             HttpEntity entity = response.getEntity();
             httpStr = EntityUtils.toString(entity, "UTF-8");
@@ -228,13 +231,17 @@ public class HttpClientUtil {
             httpPost.setConfig(requestConfig);
             StringEntity stringEntity=new StringEntity(reqParams,"utf-8");
             stringEntity.setContentType("application/x-www-form-urlencoded");
+          //  httpPost.addHeader(new BasicHeader("Cookie","Hm_lvt_603d391c2fead5a813a8f6b812c3658b=1532928314; PHPSESSID=abf680iumr0vddb35dnc98htb3; cjq_forward_url=http%3A%2F%2Fb2b59.com%2F; Hm_lpvt_603d391c2fead5a813a8f6b812c3658b=1532935174"));
+            httpPost.setHeader("User-Agent","Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36");
+            httpPost.setHeader("Accept","application/json, text/plain, */*");
+
             httpPost.setEntity(stringEntity);
             logger.info("[http工具类]请求地址:{}请求参数:{}",apiUrl,reqParams);
             response = httpClient.execute(httpPost);
             if(302==response.getStatusLine().getStatusCode()){
                 Header header = response.getFirstHeader("location"); // 跳转的目标地址是在 HTTP-HEAD 中的
                 String newUri = header.getValue(); // 这就是跳转后的地址，再向这个地址发出新申请，以便得到跳转后的信息是啥。
-                return doPost(newUri,reqParams);
+                return doPostStr(newUri,reqParams);
             }
             HttpEntity entity = response.getEntity();
             httpStr = EntityUtils.toString(entity, "UTF-8");
@@ -259,7 +266,7 @@ public class HttpClientUtil {
      * @param json json对象
      * @return
      */
-    public static String doPost(String apiUrl, Object json) {
+    public static String doPost(String apiUrl, JSONObject json) {
         CloseableHttpClient httpClient = HttpClients.createDefault();
         String httpStr = null;
         HttpPost httpPost = new HttpPost(apiUrl);
@@ -267,14 +274,49 @@ public class HttpClientUtil {
 
         try {
             httpPost.setConfig(requestConfig);
-            StringEntity stringEntity = new StringEntity(json.toString(),"UTF-8");//解决中文乱码问题
-            stringEntity.setContentEncoding("UTF-8");
+            StringEntity stringEntity = new StringEntity(json.toString());//解决中文乱码问题
+           // stringEntity.setContentEncoding("UTF-8");
             stringEntity.setContentType("application/json");
+            httpPost.setHeader("User-Agent","Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36");
+            httpPost.setHeader("Accept","application/json, text/plain, */*");
             httpPost.setEntity(stringEntity);
-            logger.debug("[http工具类]请求地址:请求参数:",apiUrl,json.toString());
+            logger.info("[http工具类]请求地址:{}请求参数:{}",apiUrl,json.toString());
             response = httpClient.execute(httpPost);
             HttpEntity entity = response.getEntity();
-            logger.debug("[http工具类]响应状态码:",response.getStatusLine().getStatusCode());
+            logger.info("[http工具类]响应状态码:{}",response.getStatusLine().getStatusCode());
+            httpStr = EntityUtils.toString(entity, "UTF-8");
+        } catch (IOException e) {
+            logger.error("[http工具类]请求发生IO异常:",e);
+        } finally {
+            if (response != null) {
+                try {
+                    EntityUtils.consume(response.getEntity());
+                } catch (IOException e) {
+                    logger.error("[http工具类]请求发生IO异常1:",e);
+                }
+            }
+        }
+        return httpStr;
+    }
+
+    public static String doPostJSon(String apiUrl, String jsonStr) {
+        CloseableHttpClient httpClient = HttpClients.createDefault();
+        String httpStr = null;
+        HttpPost httpPost = new HttpPost(apiUrl);
+        CloseableHttpResponse response = null;
+
+        try {
+            httpPost.setConfig(requestConfig);
+            StringEntity stringEntity = new StringEntity(jsonStr);//解决中文乱码问题
+            //stringEntity.setContentEncoding("UTF-8");
+            stringEntity.setContentType("application/json");
+            httpPost.setHeader("User-Agent","Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/67.0.3396.99 Safari/537.36");
+            httpPost.setHeader("Accept","application/json, text/plain, */*");
+            httpPost.setEntity(stringEntity);
+            logger.info("[http工具类]请求地址:{}请求参数:{}",apiUrl,jsonStr);
+            response = httpClient.execute(httpPost);
+            HttpEntity entity = response.getEntity();
+            logger.info("[http工具类]响应状态码:{}",response.getStatusLine().getStatusCode());
             httpStr = EntityUtils.toString(entity, "UTF-8");
         } catch (IOException e) {
             logger.error("[http工具类]请求发生IO异常:",e);
@@ -296,7 +338,7 @@ public class HttpClientUtil {
      * @param params 参数map
      * @return
      */
-    public static String doPostSSL(String apiUrl, Map<String, Object> params) {
+    public static String doPosMap(String apiUrl, Map<String, Object> params) {
         CloseableHttpClient httpClient = HttpClients.custom().setSSLSocketFactory(createSSLConnSocketFactory()).setConnectionManager(connMgr).setDefaultRequestConfig(requestConfig).build();
         HttpPost httpPost = new HttpPost(apiUrl);
         CloseableHttpResponse response = null;
@@ -427,6 +469,6 @@ public class HttpClientUtil {
         params.put("bizCode", "aaa");
         params.put("auditResult", "01");
         params.put("auditComment", "测试");
-        HttpClientUtil.doPost("http://10.103.20.26:9323/risk/notify.html",params);
+        HttpClientUtil.doPosMap("http://10.103.20.26:9323/risk/notify.html",params);
     }
 }

@@ -1,23 +1,24 @@
-package com.phone.hongzha.sms.voip;
+package com.phone.hongzha.sms.listener.voip;
 
 import com.alibaba.fastjson.JSONObject;
 import com.phone.hongzha.sms.util.HttpClientUtil;
 import org.apache.http.Header;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationListener;
 import org.springframework.context.event.ContextRefreshedEvent;
-import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
 
 public class YunHuListener implements ApplicationListener<ContextRefreshedEvent> {
-
-    private static final String loginUrl="http://www.yunhu100.com/i/2117718731/?m=passport&a=login";
-    private static final String sndUrl="http://www.yunhu100.com/i/2117718731/?m=index&a=status";
-    private static final String logOutUrl="http://www.yunhu100.com/i/2117718731/?m=index&a=stop";
-    private static final String startUrl="http://www.yunhu100.com/i/2117718731/?m=index&a=index";
-    private static String cookieStr="";
+    @Value("yunhu-head-url")
+    private  final String urlHead="http://www.yunhu121.com/i/2117718731/?";
+    private  final String loginUrl=urlHead+"m=passport&a=login";
+    private  final String sndUrl=urlHead+"m=index&a=status";
+    private  final String logOutUrl=urlHead+"?m=index&a=stop";
+    private  final String startUrl=urlHead+"?m=index&a=index";
+    private  String cookieStr="";
     private String phoneNum="18217337379";
 
     public YunHuListener(String phoneNum){
